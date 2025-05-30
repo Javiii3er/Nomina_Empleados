@@ -10,10 +10,10 @@
     <div class="row mb-3">
         <div class="col-md-4">
             <input type="text" class="form-control" placeholder="Buscar por nombre..." 
-                   @bind="searchText" @bind:event="oninput" />
+                   @bind="SearchText" @bind:event="oninput" />
         </div>
         <div class="col-md-3">
-            <select class="form-select" @bind="selectedDepartment">
+            <select class="form-select" @bind="SelectedDepartment">
                 <option value="">Todos los departamentos</option>
                 @foreach (var dept in departments)
                 {
@@ -22,7 +22,7 @@
             </select>
         </div>
         <div class="col-md-3">
-            <select class="form-select" @bind="statusFilter">
+            <select class="form-select" @bind="StatusFilter">
                 <option value="all">Todos los estados</option>
                 <option value="active">Solo activos</option>
                 <option value="inactive">Solo inactivos</option>
@@ -117,9 +117,40 @@
     private List<Empleado>? paginatedEmployees;
     private string? errorMessage;
     private List<string> departments = new();
-    private string searchText = "";
-    private string selectedDepartment = "";
-    private string statusFilter = "all";
+    
+    private string _searchText = "";
+    private string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            _searchText = value;
+            ApplyFilters();
+        }
+    }
+    
+    private string _selectedDepartment = "";
+    private string SelectedDepartment
+    {
+        get => _selectedDepartment;
+        set
+        {
+            _selectedDepartment = value;
+            ApplyFilters();
+        }
+    }
+    
+    private string _statusFilter = "all";
+    private string StatusFilter
+    {
+        get => _statusFilter;
+        set
+        {
+            _statusFilter = value;
+            ApplyFilters();
+        }
+    }
+    
     private string sortColumn = "Id";
     private bool sortAscending = true;
     private int currentPage = 1;
@@ -155,16 +186,17 @@
         if (empleados == null) return;
 
         filteredEmployees = empleados
-            .Where(e => string.IsNullOrEmpty(searchText) || 
-                       e.Nombre.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            .Where(e => string.IsNullOrEmpty(selectedDepartment) || 
-                       e.Departamento == selectedDepartment)
-            .Where(e => statusFilter == "all" || 
-                       (statusFilter == "active" && e.Activo) || 
-                       (statusFilter == "inactive" && !e.Activo))
+            .Where(e => string.IsNullOrEmpty(_searchText) || 
+                       e.Nombre.Contains(_searchText, StringComparison.OrdinalIgnoreCase))
+            .Where(e => string.IsNullOrEmpty(_selectedDepartment) || 
+                       e.Departamento == _selectedDepartment)
+            .Where(e => _statusFilter == "all" || 
+                       (_statusFilter == "active" && e.Activo) || 
+                       (_statusFilter == "inactive" && !e.Activo))
             .ToList();
 
         ApplySorting();
+        StateHasChanged();
     }
 
     private void ApplySorting()
