@@ -1,6 +1,16 @@
-using Nomina.API.Data;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Nomina.API.Data;
+using Nomina.Shared.Models;
+using System.Text;
+
+// Definir summaries al inicio para evitar errores
+var summaries = new[]
+{
+    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+};
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,23 +24,86 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         }
     ));
 
-// --- Servicios de CORS ---
+// Configuración CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", builder =>
-        builder.WithOrigins("http://localhost:5093") // Puerto del cliente Blazor
+        builder.WithOrigins("http://localhost:5093")
                .AllowAnyMethod()
-               .AllowAnyHeader());
+               .AllowAnyHeader()
+               .AllowCredentials());
 });
 
+// Configuración JWT
+var jwtSettings = builder.Configuration.GetSection("JWT");
+var key = Encoding.ASCII.GetBytes(jwtSettings["Key"]!);
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options => {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings["Issuer"],
+            ValidateAudience = true,
+            ValidAudience = jwtSettings["Audience"],
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                if (!string.IsNullOrEmpty(accessToken))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+    });
+
+builder.Services.AddAuthorization();
+
+// Configuración Swagger con JWT
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Nomina API", Version = "v1" });
+
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "JWT Authorization header using the Bearer scheme",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Middleware de desarrollo
+// Middleware Pipeline
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -38,19 +111,17 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
-app.UseCors("AllowBlazorClient"); // <-- Esta línea es crucial
-
-// Middleware existentes
-app.UseHttpsRedirection();
+app.UseCors("AllowBlazorClient");
+app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 
-// Son los Endpoint de ejemplo inicial
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// Endpoint seguro de ejemplo
+app.MapGet("/secure", () => "Este es un endpoint seguro!")
+   .RequireAuthorization();
 
+// Endpoint weatherforecast
 app.MapGet("/weatherforecast", () =>
 {
     var forecast = Enumerable.Range(1, 5).Select(index =>
@@ -65,9 +136,26 @@ app.MapGet("/weatherforecast", () =>
 })
 .WithName("GetWeatherForecast");
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    if (!db.Usuarios.Any())
+    {
+        db.Usuarios.Add(new Usuario
+        {
+            Username = "admin",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
+            Role = "Admin"
+        });
+        await db.SaveChangesAsync();
+    }
+}
+
+
 app.Run();
 
-// Record existente
+// Record para weatherforecast
 record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
 {
     public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
