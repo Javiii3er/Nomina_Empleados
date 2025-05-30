@@ -11,10 +11,12 @@ namespace Nomina.API.Controllers
     {
         private readonly AppDbContext _context;
 
+#pragma warning disable IDE0290
         public EmpleadosController(AppDbContext context)
         {
             _context = context;
         }
+#pragma warning restore IDE0290
 
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Empleado>>> GetEmpleados()
@@ -35,9 +37,34 @@ namespace Nomina.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Empleado>> PostEmpleado(Empleado empleado)
         {
-            _context.Empleados.Add(empleado);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetEmpleado), new { id = empleado.Id }, empleado);
+            // --- INICIO DE MEJORAS ---
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    Message = "Datos inválidos",
+                    Errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                });
+            }
+
+            try
+            {
+                _context.Empleados.Add(empleado);
+                await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetEmpleado), new { id = empleado.Id }, empleado);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Message = "Error interno al crear empleado",
+                    Detail = ex.Message
+                });
+            }
+            // --- FIN DE MEJORAS ---
         }
 
         [HttpPut("{id}")]
