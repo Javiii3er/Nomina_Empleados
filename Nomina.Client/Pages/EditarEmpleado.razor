@@ -1,0 +1,144 @@
+﻿@page "/empleados/editar/{Id:int}"
+@inject HttpClient Http
+@inject NavigationManager NavigationManager
+@using Nomina.Shared.Models
+@using System.Net.Http.Json
+
+<h3>Editar Empleado</h3>
+
+@if (errorMessage != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show mt-3">
+        @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+<EditForm Model="@empleado" OnValidSubmit="GuardarCambios">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Nombre:</label>
+        <InputText class="form-control" @bind-Value="empleado.Nombre" />
+        <ValidationMessage For="@(() => empleado.Nombre)" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Fecha Nacimiento:</label>
+        <InputDate class="form-control" @bind-Value="empleado.FechaNacimiento" />
+    </div>
+
+    <!-- Repite para todos los campos como en AgregarEmpleado.razor -->
+
+    <div class="d-flex gap-2 mt-4">
+        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+            @if (isSaving)
+            {
+                <span class="spinner-border spinner-border-sm"></span>
+            }
+            Guardar
+        </button>
+        <button type="button" class="btn btn-secondary" @onclick="VolverALista">
+            Cancelar
+        </button>
+        <button type="button" class="btn btn-danger ms-auto" @onclick="MostrarConfirmacionEliminar">
+            Eliminar
+        </button>
+    </div>
+</EditForm>
+
+@if (showDeleteConfirmation)
+{
+    <div class="modal fade show" style="display: block; background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar Eliminación</h5>
+                </div>
+                <div class="modal-body">
+                    ¿Estás seguro de eliminar a @empleado.Nombre?
+                </div>
+                <div class="modal-footer">
+                    <button @onclick="EliminarEmpleado" class="btn btn-danger">Sí, Eliminar</button>
+                    <button @onclick="OcultarConfirmacionEliminar" class="btn btn-secondary">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="card mt-4">
+    <div class="card-header">
+        Historial de Cambios
+    </div>
+    <div class="card-body">
+        <pre class="mb-0">@empleado.HistorialCambios</pre>
+    </div>
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private Empleado empleado = new();
+    private bool isSaving = false;
+    private bool showDeleteConfirmation = false;
+    private string? errorMessage;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (empleado.Id == 0)
+        {
+            await LoadEmpleado();
+        }
+    }
+
+    private async Task LoadEmpleado()
+    {
+        try
+        {
+            empleado = await Http.GetFromJsonAsync<Empleado>($"api/Empleados/{Id}") ?? new();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error al cargar empleado: {ex.Message}";
+        }
+    }
+
+    private async Task GuardarCambios()
+    {
+        isSaving = true;
+        try
+        {
+            var response = await Http.PutAsJsonAsync($"api/Empleados/{Id}", empleado);
+            if (!response.IsSuccessStatusCode)
+            {
+                errorMessage = await response.Content.ReadAsStringAsync();
+                return;
+            }
+            NavigationManager.NavigateTo("/empleados");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void MostrarConfirmacionEliminar() => showDeleteConfirmation = true;
+    private void OcultarConfirmacionEliminar() => showDeleteConfirmation = false;
+
+    private async Task EliminarEmpleado()
+    {
+        isSaving = true;
+        try
+        {
+            await Http.DeleteAsync($"api/Empleados/{Id}");
+            NavigationManager.NavigateTo("/empleados");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void VolverALista() => NavigationManager.NavigateTo("/empleados");
+}

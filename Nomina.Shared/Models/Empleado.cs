@@ -55,4 +55,7 @@ public class Empleado
     [Range(typeof(DateTime), "1/1/1900", "1/1/2100", ErrorMessage = "Ingrese una fecha entre 1900 y 2100")]
     [MayorDeEdad(18, ErrorMessage = "El empleado debe ser mayor de edad (mínimo 18 años)")]
     public DateTime FechaNacimiento { get; set; }
+
+    [Display(Name = "Historial de Cambios")]
+    public string HistorialCambios { get; set; } = string.Empty;
 }

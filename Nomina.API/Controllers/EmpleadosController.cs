@@ -37,7 +37,6 @@ namespace Nomina.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Empleado>> PostEmpleado(Empleado empleado)
         {
-            // --- INICIO DE MEJORAS ---
             if (!ModelState.IsValid)
             {
                 return BadRequest(new
@@ -64,7 +63,6 @@ namespace Nomina.API.Controllers
                     Detail = ex.Message
                 });
             }
-            // --- FIN DE MEJORAS ---
         }
 
         [HttpPut("{id}")]
@@ -73,9 +71,68 @@ namespace Nomina.API.Controllers
             if (id != empleado.Id)
                 return BadRequest();
 
-            _context.Entry(empleado).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-            return NoContent();
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(new
+                {
+                    Message = "Datos inválidos",
+                    Errors = ModelState.Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                });
+            }
+
+            try
+            {
+                var empleadoExistente = await _context.Empleados.FindAsync(id);
+                if (empleadoExistente == null)
+                    return NotFound();
+
+                // Registrar cambios importantes
+                var cambios = new List<string>();
+                if (empleadoExistente.Salario != empleado.Salario)
+                    cambios.Add($"Salario: {empleadoExistente.Salario} → {empleado.Salario}");
+                if (empleadoExistente.Cargo != empleado.Cargo)
+                    cambios.Add($"Cargo: {empleadoExistente.Cargo} → {empleado.Cargo}");
+                if (empleadoExistente.Departamento != empleado.Departamento)
+                    cambios.Add($"Departamento: {empleadoExistente.Departamento} → {empleado.Departamento}");
+
+                if (cambios.Count > 0)
+
+                {
+                    var fecha = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+                    var entrada = $"[{fecha}] Cambios: {string.Join(", ", cambios)}";
+                    empleadoExistente.HistorialCambios += string.IsNullOrWhiteSpace(empleadoExistente.HistorialCambios)
+                        ? entrada
+                        : $"\n{entrada}";
+                }
+
+                _context.Entry(empleadoExistente).CurrentValues.SetValues(empleado);
+                // No sobrescribas HistorialCambios
+                _context.Entry(empleadoExistente).Property(e => e.HistorialCambios).IsModified = true;
+
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                if (!EmpleadoExists(id))
+                    return NotFound();
+
+                return StatusCode(500, new
+                {
+                    Message = "Error de concurrencia al actualizar",
+                    Detail = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Message = "Error interno al actualizar empleado",
+                    Detail = ex.Message
+                });
+            }
         }
 
         [HttpDelete("{id}")]
@@ -85,9 +142,25 @@ namespace Nomina.API.Controllers
             if (empleado == null)
                 return NotFound();
 
-            _context.Empleados.Remove(empleado);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            try
+            {
+                _context.Empleados.Remove(empleado);
+                await _context.SaveChangesAsync();
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    Message = "Error interno al eliminar empleado",
+                    Detail = ex.Message
+                });
+            }
+        }
+
+        private bool EmpleadoExists(int id)
+        {
+            return _context.Empleados.Any(e => e.Id == id);
         }
     }
 }
