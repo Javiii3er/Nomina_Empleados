@@ -1,4 +1,4 @@
-html, body {
+﻿html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
@@ -17,7 +17,7 @@ a, .btn-link {
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
 .content {
@@ -110,5 +110,162 @@ code {
 }
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
+    text-align: start;
+}
+
+
+/* NUEVOS ESTILOS PERSONALIZADOS */
+/* Avatar circular con inicial */
+.avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #0d6efd;
+    color: white;
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 0.9rem;
+}
+
+/* Hover en tarjetas */
+.card-hover {
+    transition: box-shadow 0.3s ease;
+}
+
+    .card-hover:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+/* Mejoras visuales en la paginación */
+.page-link {
+    min-width: 40px;
+    text-align: center;
+}
+
+/* Asegura que los inputs marcados como válidos tengan un estilo más sutil */
+.valid.modified:not([type=checkbox]) {
+    outline: 2px solid #26b050; /* Ligera mejora en visibilidad */
+    outline-offset: 2px;
+}
+
+/* Mejora de accesibilidad para .invalid */
+.invalid {
+    outline: 2px solid red;
+    outline-offset: 2px;
+}
+
+/* Separación clara para mensajes de validación */
+.validation-message {
+    color: red;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+}
+
+/* Mejoras al diseño del contenedor de error de Blazor */
+#blazor-error-ui {
+    color-scheme: light only;
+    background: lightyellow;
+    bottom: 0;
+    box-shadow: 0 -1px 2px rgba(0, 0, 0, 0.2);
+    box-sizing: border-box;
+    display: none;
+    left: 0;
+    padding: 0.6rem 1.25rem 0.7rem 1.25rem;
+    position: fixed;
+    width: 100%;
+    z-index: 1000;
+    font-size: 0.95rem;
+}
+
+    #blazor-error-ui .dismiss {
+        cursor: pointer;
+        position: absolute;
+        right: 0.75rem;
+        top: 0.5rem;
+    }
+
+    /* Animación opcional para mostrar errores (puede activarse con clases dinámicas) */
+    #blazor-error-ui.show {
+        display: block;
+        animation: fadein 0.3s ease-in-out;
+    }
+
+@keyframes fadein {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.blazor-error-boundary {
+    background: url(data:image/svg+xml;base64,...) no-repeat 1rem/1.8rem, #b32121;
+    padding: 1rem 1rem 1rem 3.7rem;
+    color: white;
+    border-top: 2px solid #9e1c1c;
+    font-size: 0.95rem;
+}
+
+    .blazor-error-boundary::after {
+        content: "An error has occurred.";
+    }
+
+/* Estilo de carga circular */
+.loading-progress {
+    position: relative;
+    display: block;
+    width: 8rem;
+    height: 8rem;
+    margin: 20vh auto 1rem auto;
+}
+
+    .loading-progress circle {
+        fill: none;
+        stroke: #e0e0e0;
+        stroke-width: 0.6rem;
+        transform-origin: 50% 50%;
+        transform: rotate(-90deg);
+    }
+
+        .loading-progress circle:last-child {
+            stroke: #1b6ec2;
+            stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
+            transition: stroke-dasharray 0.05s ease-in-out;
+        }
+
+.loading-progress-text {
+    position: absolute;
+    text-align: center;
+    font-weight: bold;
+    inset: calc(20vh + 3.25rem) 0 auto 0.2rem;
+}
+
+    .loading-progress-text:after {
+        content: var(--blazor-load-percentage-text, "Loading");
+    }
+
+/* Colores para código */
+code {
+    color: #c02d76;
+    font-family: Consolas, monospace;
+    font-size: 0.95rem;
+}
+
+/* Placeholder de formularios flotantes con mejor visibilidad */
+.form-floating > .form-control-plaintext::placeholder,
+.form-floating > .form-control::placeholder {
+    color: var(--bs-secondary-color);
+    text-align: end;
+}
+
+.form-floating > .form-control-plaintext:focus::placeholder,
+.form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
