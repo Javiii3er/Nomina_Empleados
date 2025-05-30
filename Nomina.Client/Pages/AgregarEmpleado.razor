@@ -1,0 +1,89 @@
+﻿@page "/empleados/agregar"
+@inject HttpClient Http
+@using Nomina.Shared.Models
+@using System.Net.Http.Json
+
+<h3>Agregar Empleado</h3>
+
+<EditForm Model="@empleado" OnValidSubmit="GuardarEmpleado">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label>Nombre:</label>
+        <InputText class="form-control" @bind-Value="empleado.Nombre" />
+    </div>
+
+    <div class="mb-3">
+        <label>Fecha de Nacimiento:</label>
+        <InputDate class="form-control" @bind-Value="empleado.FechaNacimiento" />
+    </div>
+
+    <div class="mb-3">
+        <label>Dirección:</label>
+        <InputText class="form-control" @bind-Value="empleado.Direccion" />
+    </div>
+
+    <div class="mb-3">
+        <label>Teléfono:</label>
+        <InputText class="form-control" @bind-Value="empleado.Telefono" />
+    </div>
+
+    <div class="mb-3">
+        <label>Email:</label>
+        <InputText class="form-control" @bind-Value="empleado.Email" />
+    </div>
+
+    <div class="mb-3">
+        <label>Salario:</label>
+        <InputNumber class="form-control" @bind-Value="empleado.Salario" />
+    </div>
+
+    <div class="mb-3">
+        <label>Cargo:</label>
+        <InputText class="form-control" @bind-Value="empleado.Cargo" />
+    </div>
+
+    <div class="mb-3">
+        <label>Departamento:</label>
+        <InputText class="form-control" @bind-Value="empleado.Departamento" />
+    </div>
+
+    <div class="form-check">
+        <InputCheckbox class="form-check-input" @bind-Value="empleado.Activo" />
+        <label class="form-check-label">Activo</label>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Guardar</button>
+</EditForm>
+
+@if (mensaje != null)
+{
+    <div class="alert alert-info mt-3">@mensaje</div>
+}
+
+@code {
+    private Empleado empleado = new();
+    private string? mensaje;
+
+    private async Task GuardarEmpleado()
+    {
+        try
+        {
+            var response = await Http.PostAsJsonAsync("api/empleados", empleado);
+            if (response.IsSuccessStatusCode)
+            {
+                mensaje = "Empleado agregado correctamente.";
+                empleado = new(); // Limpia el formulario
+            }
+            else
+            {
+                mensaje = $"Error: {response.StatusCode}";
+            }
+        }
+        catch (Exception ex)
+        {
+            mensaje = $"Error de conexión: {ex.Message}";
+        }
+    }
+}
