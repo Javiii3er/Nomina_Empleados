@@ -1,0 +1,82 @@
+﻿@page "/empleados"
+@using Nomina.Shared.Models
+@inject HttpClient Http
+
+<div class="container mt-4">
+    <h3 class="text-primary mb-4">Lista de Empleados</h3>
+
+    @if (errorMessage != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show">
+            @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+    else if (empleados == null)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p class="mt-3 text-muted">Cargando datos de empleados...</p>
+        </div>
+    }
+    else if (!empleados.Any())
+    {
+        <div class="alert alert-info">
+            No hay empleados registrados. <a href="#" class="alert-link">¿Agregar nuevo?</a>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Nombre</th>
+                        <th scope="col">Cargo</th>
+                        <th scope="col" class="text-end">Salario</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var emp in empleados)
+                    {
+                        <tr>
+                            <td>@emp.Id</td>
+                            <td>@emp.Nombre</td>
+                            <td>@emp.Cargo</td>
+                            <td class="text-end">@emp.Salario.ToString("C2")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Empleado>? empleados;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync("api/Empleados");
+            
+            if (response.IsSuccessStatusCode)
+            {
+                empleados = await response.Content.ReadFromJsonAsync<List<Empleado>>();
+            }
+            else
+            {
+                errorMessage = $"Error al cargar datos: {response.StatusCode} - {response.ReasonPhrase}";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error crítico: {ex.Message}";
+        }
+    }
+}
