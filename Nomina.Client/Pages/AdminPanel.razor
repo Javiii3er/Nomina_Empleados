@@ -1,0 +1,12 @@
+﻿@page "/admin"
+@attribute [Authorize(Roles = "Admin")] 
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+
+<h1>Panel de Administración</h1>
+<p>Bienvenido al área restringida para administradores</p>
+
+<!-- Contenido exclusivo -->
+<AuthorizeView Roles="Admin">
+    <button class="btn btn-danger">Configuración Avanzada</button>
+</AuthorizeView>
