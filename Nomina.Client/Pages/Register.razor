@@ -1,0 +1,37 @@
+﻿@page "/register"
+@using Nomina.Shared.Models
+@inject HttpClient http
+@inject NavigationManager nav
+@inject IJSRuntime JS
+
+<h3>Registro de nuevo usuario</h3>
+
+<input placeholder="Usuario" @bind="nuevoUsuario.Username" />
+<input placeholder="Contraseña" @bind="nuevoUsuario.Password" type="@tipoPassword" />
+<button @onclick="MostrarPassword">@iconoPassword</button>
+<button @onclick="Registrarme">Registrarme</button>
+
+@code {
+    RegisterDto nuevoUsuario = new RegisterDto();
+    string tipoPassword = "password";
+    string iconoPassword = "👁️🗨️";
+
+    async Task Registrarme()
+    {
+        var response = await http.PostAsJsonAsync("api/auth/register", nuevoUsuario);
+        if (response.IsSuccessStatusCode)
+        {
+            nav.NavigateTo("/login");
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("alert", "Error al registrar el usuario.");
+        }
+    }
+
+    void MostrarPassword()
+    {
+        tipoPassword = tipoPassword == "password" ? "text" : "password";
+        iconoPassword = tipoPassword == "password" ? "👁️🗨️" : "🙈";
+    }
+}

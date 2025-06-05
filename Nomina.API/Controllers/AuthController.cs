@@ -36,6 +36,33 @@ namespace Nomina.API.Controllers
             return Ok(new { Token = token });
         }
 
+        [HttpPost("register")]
+        public async Task<IActionResult> Register([FromBody] RegisterDto dto)
+        {
+            if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+                return BadRequest("Usuario o contraseña vacíos");
+
+            var exists = await _context.Usuarios.AnyAsync(u => u.Username == dto.Username);
+            if (exists)
+                return BadRequest("El usuario ya existe");
+
+            var nuevoUsuario = new Usuario
+            {
+                Username = dto.Username,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password),
+                Role = "User" // Valor por defecto
+            };
+
+            _context.Usuarios.Add(nuevoUsuario);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = "Usuario registrado exitosamente",
+                Username = nuevoUsuario.Username
+            });
+        }
+
         private string GenerateJwtToken(Usuario usuario)
         {
             var securityKey = new SymmetricSecurityKey(
@@ -62,6 +89,31 @@ namespace Nomina.API.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+        // Endpoint temporal - ELIMINAR después de usar en producción
+        [HttpPost("crear-admin-temp")]
+        public async Task<IActionResult> CrearAdminTemporal()
+        {
+            if (await _context.Usuarios.AnyAsync(u => u.Username == "admin"))
+                return BadRequest("El usuario admin ya existe");
+
+            var admin = new Usuario
+            {
+                Username = "admin",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123*"),
+                Role = "Admin"
+            };
+
+            _context.Usuarios.Add(admin);
+            await _context.SaveChangesAsync();
+
+            return Ok(new
+            {
+                Message = "Usuario admin creado (ELIMINAR ESTE ENDPOINT DESPUÉS DE USAR)",
+                Username = admin.Username,
+                Password = "Admin123*"
+            });
+        }
     }
 
     public class LoginDto
@@ -69,4 +121,11 @@ namespace Nomina.API.Controllers
         public required string Username { get; set; }
         public required string Password { get; set; }
     }
+
+    public class RegisterDto
+    {
+        public required string Username { get; set; }
+        public required string Password { get; set; }
+    }
+
 }

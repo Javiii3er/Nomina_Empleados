@@ -6,6 +6,7 @@ using Nomina.Client.Providers;
 using Nomina.Client.Services;
 using Blazored.LocalStorage;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Nomina.Client;
 
@@ -32,7 +33,11 @@ public class Program
                 policy.RequireClaim(ClaimTypes.Role, "Admin"));
             options.AddPolicy("HR_Plus", policy =>
                 policy.RequireClaim(ClaimTypes.Role, ["Admin", "HR"]));
+            options.FallbackPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .Build();
         });
+
         builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
         builder.Services.AddScoped<AuthService>();
         builder.Services.AddScoped<AuthenticatedHttpClient>();

@@ -10,34 +10,46 @@
 @inject ILocalStorageService LocalStorage
 @inject AuthenticationStateProvider AuthStateProvider
 
+
 <PageTitle>Iniciar sesión</PageTitle>
 
-<div class="auth-container">
-    <EditForm Model="@Model" OnValidSubmit="HandleLogin">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
-
-        <div class="form-group">
-            <label for="username">Usuario:</label>
-            <InputText id="username" @bind-Value="Model.Username" class="form-control" />
-            <ValidationMessage For="@(() => Model.Username)" />
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-header">
+            <h1 class="login-title">Bienvenido</h1>
+            <p class="login-subtitle">Ingresa tus credenciales</p>
         </div>
 
-        <div class="form-group">
-            <label for="password">Contraseña:</label>
-            <InputText id="password" type="password" @bind-Value="Model.Password" class="form-control" />
-            <ValidationMessage For="@(() => Model.Password)" />
+        <EditForm class="login-form" Model="@Model" OnValidSubmit="HandleLogin">
+            <DataAnnotationsValidator />
+
+            <div class="form-group">
+                <label class="form-label">Usuario:</label>
+                <InputText class="form-control" @bind-Value="Model.Username" />
+                <ValidationMessage For="@(() => Model.Username)" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Contraseña:</label>
+                <InputText type="password" class="form-control" @bind-Value="Model.Password" />
+                <ValidationMessage For="@(() => Model.Password)" />
+            </div>
+
+            @if (ErrorMessage != null)
+            {
+                <div class="error-message">@ErrorMessage</div>
+            }
+
+            <button type="submit" class="btn-login" disabled="@IsLoading">
+                @(IsLoading ? "Verificando..." : "INGRESAR")
+            </button>
+        </EditForm>
+
+        <div class="login-links">
+            <a href="#" class="login-link">¿Perdiste tu contraseña?</a>
+            <a href="/register" class="login-link">¿No tienes cuenta? Regístrate</a>
         </div>
-
-        @if (ErrorMessage != null)
-        {
-            <div class="alert alert-danger">@ErrorMessage</div>
-        }
-
-        <button type="submit" class="btn btn-primary" disabled="@IsLoading">
-            @(IsLoading ? "Cargando..." : "Ingresar")
-        </button>
-    </EditForm>
+    </div>
 </div>
 
 @code {
@@ -69,8 +81,6 @@
                 returnUrl = "/empleados";
 
             Nav.NavigateTo(returnUrl ?? "/", forceLoad: true);
-
-
         }
         else
         {
@@ -84,7 +94,10 @@
     {
         var token = await LocalStorage.GetItemAsync<string>("authToken");
         if (!string.IsNullOrEmpty(token))
+        {
+            // Redirige a la página principal si ya está autenticado
             Nav.NavigateTo("/", forceLoad: true);
+        }
     }
 
     public class LoginModel
